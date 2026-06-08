@@ -1,8 +1,7 @@
 /* ════════════════════════════════════════════
-   FLOWBUDGET — app.js (Universal Version)
+   FLOWBUDGET — app.js (Universal + Delete)
    ════════════════════════════════════════════ */
 
-// ── CONFIG & STATE ────────────────────────────
 const STORAGE_URL_KEY  = 'flowbudget_gas_url';
 const STORAGE_USER_KEY = 'flowbudget_user';
 
@@ -26,7 +25,6 @@ const CAT_COLORS = [
   '#f472b6','#38bdf8','#fb923c','#a3e635','#e879f9','#22d3ee'
 ];
 
-// ── INIT ─────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const today = new Date();
   document.getElementById('exp-date').value  = today.toISOString().split('T')[0];
@@ -43,7 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
   Charts.initEmpty();
 });
 
-// ── API — SOLO GET ────────────────────────────
 async function api(params = {}) {
   const url = new URL(GAS_URL);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -60,7 +57,6 @@ async function api(params = {}) {
   return json;
 }
 
-// ── AUTH Y CONEXIÓN ───────────────────────────
 async function connectDatabase() {
   const name = document.getElementById('user-name-input').value.trim();
   const url = document.getElementById('user-url-input').value.trim();
@@ -116,7 +112,6 @@ function logoutUser() {
   location.reload();
 }
 
-// ── NAVIGATION ────────────────────────────────
 const PAGE_TITLES = {
   'dashboard':   '📊 Dashboard',
   'add-expense': '➕ Agregar Gasto',
@@ -143,7 +138,6 @@ function showPage(id) {
     }
   });
 
-  // Cerrar menú en móviles al seleccionar una opción
   if (window.innerWidth <= 900) {
     document.getElementById('sidebar').classList.remove('open');
     const overlay = document.getElementById('sidebar-overlay');
@@ -169,7 +163,6 @@ function updateMonthDisplay() {
   if (m2) m2.textContent = label;
 }
 
-// ── DASHBOARD ─────────────────────────────────
 async function refreshDashboard() {
   if (!currentUser) return;
   showLoader('Actualizando dashboard…');
@@ -242,7 +235,6 @@ function renderTopExpenses(topList) {
     wrap.innerHTML = '<div class="empty-state" style="padding:20px 0;"><div class="empty-sub">Sin gastos mayores</div></div>';
     return;
   }
-  
   wrap.innerHTML = topList.map(e => `
     <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border);">
       <div style="display:flex; flex-direction:column; gap:4px;">
@@ -254,7 +246,6 @@ function renderTopExpenses(topList) {
   `).join('');
 }
 
-// ── GASTOS ────────────────────────────────────
 async function addExpense() {
   const date   = document.getElementById('exp-date').value;
   const amount = parseFloat(document.getElementById('exp-amount').value);
@@ -327,7 +318,7 @@ function renderExpensesTable(expenses) {
   `).join('');
 }
 
-// NUEVA FUNCIÓN PARA ELIMINAR
+// ── NUEVA FUNCIÓN: ELIMINAR GASTO ──
 async function deleteExpenseItem(rowIdx) {
   if (!confirm('¿Estás seguro de que deseas eliminar este gasto de forma permanente?')) return;
   
@@ -335,8 +326,8 @@ async function deleteExpenseItem(rowIdx) {
   try {
     await api({ action: 'deleteExpense', rowIdx });
     toast('✅ Gasto eliminado', 'success');
-    loadExpenses(); // Recargamos la tabla automáticamente
-    refreshDashboard(); // Actualizamos los cálculos del dashboard
+    loadExpenses(); // Recarga la tabla
+    refreshDashboard(); // Recalcula el dashboard
   } catch (e) {
     toast('Error: ' + e.message, 'error');
   } finally {
@@ -344,7 +335,6 @@ async function deleteExpenseItem(rowIdx) {
   }
 }
 
-// ── INGRESOS ──────────────────────────────────
 async function saveIncome() {
   const month  = document.getElementById('inc-month').value;
   const year   = document.getElementById('inc-year').value;
@@ -387,7 +377,6 @@ async function loadIncomeHistory() {
   }
 }
 
-// ── SETTINGS ─────────────────────────────────
 function saveGasUrl() {
   const url = document.getElementById('gas-url').value.trim();
   if (!url) return toast('Ingresa una URL válida', 'error');
@@ -410,7 +399,6 @@ async function testConnection() {
   }
 }
 
-// ── CHARTS ────────────────────────────────────
 const Charts = {
   initEmpty() {
     this.renderLine([], 0, currentMonth, currentYear);
@@ -550,7 +538,6 @@ function chartOpts({ currency = false } = {}) {
   };
 }
 
-// ── HELPERS ───────────────────────────────────
 function fmt(n)  { return 'S/ ' + (n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function fmt2(n) { return (n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function fmtDate(str) {
