@@ -305,7 +305,7 @@ function renderExpensesTable(expenses) {
   document.getElementById('exp-count-label').textContent = expenses.length + ' registros';
 
   if (!expenses.length) {
-    tbody.innerHTML = `<tr><td colspan="4">
+    tbody.innerHTML = `<tr><td colspan="5">
       <div class="empty-state">
         <div class="empty-icon">📋</div>
         <div class="empty-title">Sin gastos este mes</div>
@@ -320,8 +320,28 @@ function renderExpensesTable(expenses) {
       <td>${e.description || '—'}</td>
       <td><span class="cat-tag">${e.category}</span></td>
       <td style="text-align:right;font-family:var(--font-head);font-weight:700;color:var(--danger);">${fmt(e.amount)}</td>
+      <td style="text-align:right;">
+        <button onclick="deleteExpenseItem(${e.rowIdx})" style="background:transparent;border:none;cursor:pointer;font-size:1.1rem;opacity:0.6;transition:opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6" title="Eliminar">🗑️</button>
+      </td>
     </tr>
   `).join('');
+}
+
+// NUEVA FUNCIÓN PARA ELIMINAR
+async function deleteExpenseItem(rowIdx) {
+  if (!confirm('¿Estás seguro de que deseas eliminar este gasto de forma permanente?')) return;
+  
+  showLoader('Eliminando gasto…');
+  try {
+    await api({ action: 'deleteExpense', rowIdx });
+    toast('✅ Gasto eliminado', 'success');
+    loadExpenses(); // Recargamos la tabla automáticamente
+    refreshDashboard(); // Actualizamos los cálculos del dashboard
+  } catch (e) {
+    toast('Error: ' + e.message, 'error');
+  } finally {
+    hideLoader();
+  }
 }
 
 // ── INGRESOS ──────────────────────────────────
