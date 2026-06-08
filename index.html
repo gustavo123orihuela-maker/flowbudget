@@ -81,10 +81,17 @@
     </div>
   </nav>
 
+  <!-- Fondo oscuro para el menú en móviles -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleMenu()"></div>
+
   <main class="main">
 
     <div class="topbar">
-      <h1 class="page-title" id="page-title">Dashboard</h1>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <!-- Botón Hamburguesa -->
+        <button class="mobile-menu-btn" onclick="toggleMenu()">☰</button>
+        <h1 class="page-title" id="page-title">Dashboard</h1>
+      </div>
       <div class="user-pill" onclick="showPage('income')">
         <div class="user-avatar" id="top-avatar">U</div>
         <span id="top-username">Usuario</span>
@@ -385,7 +392,9 @@
     </div>
 
   </main>
-</div><div class="loader-overlay" id="loader">
+</div>
+
+<div class="loader-overlay" id="loader">
   <div class="loader-box">
     <div class="big-spinner"></div>
     <span id="loader-msg">Cargando…</span>

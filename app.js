@@ -125,6 +125,12 @@ const PAGE_TITLES = {
   'settings':    '⚙️ Configuración'
 };
 
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (overlay) overlay.classList.toggle('show');
+}
+
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -136,6 +142,13 @@ function showPage(id) {
       n.classList.add('active');
     }
   });
+
+  // Cerrar menú en móviles al seleccionar una opción
+  if (window.innerWidth <= 900) {
+    document.getElementById('sidebar').classList.remove('open');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (overlay) overlay.classList.remove('show');
+  }
 
   if (id === 'expenses') loadExpenses();
   if (id === 'income')   loadIncomeHistory();
