@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlowBudget — Control de Gastos</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">⟡ FlowBudget</div>
+    <p class="login-tagline">Conecta tu base de datos privada</p>
+
+    <div style="text-align:left;margin-bottom:6px;">
+      <label>¿Cómo te llamas?</label>
+    </div>
+    <input 
+      type="text" 
+      id="user-name-input" 
+      placeholder="Ej: Gustavo" 
+      autocomplete="off" 
+    />
+
+    <div style="text-align:left;margin-top:16px;margin-bottom:6px;">
+      <label>Enlace de tu App Script</label>
+    </div>
+    <input 
+      type="url" 
+      id="user-url-input" 
+      placeholder="https://script.google.com/macros/s/.../exec" 
+      autocomplete="off" 
+    />
+
+    <button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="connectDatabase()">
+      Conectar Sistema →
+    </button>
+    <p style="font-size:.75rem;color:var(--muted);margin-top:16px;line-height:1.6;">
+      Tus datos son 100% privados y se guardan únicamente en tu cuenta de Google.
+    </p>
+  </div>
+</div>
+
+
+<div id="app" style="display:none;">
+
+  <nav class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      FlowBudget
+    </div>
+
+    <button class="nav-item active" onclick="showPage('dashboard')">
+      <span class="nav-icon">📊</span> Dashboard
+    </button>
+    <button class="nav-item" onclick="showPage('add-expense')">
+      <span class="nav-icon">➕</span> Agregar Gasto
+    </button>
+    <button class="nav-item" onclick="showPage('expenses')">
+      <span class="nav-icon">📋</span> Mis Gastos
+    </button>
+    <button class="nav-item" onclick="showPage('income')">
+      <span class="nav-icon">💰</span> Ingreso Mensual
+    </button>
+    <button class="nav-item" onclick="showPage('settings')">
+      <span class="nav-icon">⚙️</span> Configuración
+    </button>
+
+    <div class="sidebar-footer">
+      <div style="font-weight:600;color:var(--text);margin-bottom:4px;" id="sidebar-user">—</div>
+      <div>FlowBudget v2.0</div>
+      <button class="btn btn-secondary" style="margin-top:12px;padding:8px 14px;font-size:.78rem;width:100%;" onclick="logoutUser()">
+        🚪 Desconectar BD
+      </button>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <div class="topbar">
+      <h1 class="page-title" id="page-title">Dashboard</h1>
+      <div class="user-pill" onclick="showPage('income')">
+        <div class="user-avatar" id="top-avatar">U</div>
+        <span id="top-username">Usuario</span>
+        <span style="color:var(--muted)">▾</span>
+      </div>
+    </div>
+
+    <div class="page active" id="page-dashboard">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="month-nav">
+          <button onclick="changeMonth(-1)">◂</button>
+          <div class="month-label" id="month-display">Junio 2025</div>
+          <button onclick="changeMonth(1)">▸</button>
+        </div>
+        <button class="btn btn-primary" onclick="refreshDashboard()">🔄 Actualizar</button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card green">
+          <div class="stat-label">Ingreso Mensual</div>
+          <div class="stat-value" id="dash-income">S/ —</div>
+          <div class="stat-sub">Ingreso acumulado</div>
+          <div class="stat-badge badge-green" id="dash-income-badge">✓ Activo</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Total Gastado</div>
+          <div class="stat-value" id="dash-spent">S/ —</div>
+          <div class="stat-sub" id="dash-spent-sub">Este mes</div>
+          <div class="stat-badge badge-red" id="dash-pct-badge">—%</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Saldo Disponible</div>
+          <div class="stat-value" id="dash-balance">S/ —</div>
+          <div class="stat-sub">Ingreso − Gastos</div>
+          <div class="stat-badge" id="dash-balance-badge" style="background:rgba(74,143,255,.15);color:var(--accent2)">— días</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-label">Promedio Diario</div>
+          <div class="stat-value" id="dash-daily">S/ —</div>
+          <div class="stat-sub">Gasto por día</div>
+          <div class="stat-badge badge-warn" id="dash-days-badge">— gastos</div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Evolución de Gastos</div>
+              <div class="chart-sub">Acumulado vs. presupuesto ideal</div>
+            </div>
+            <div id="chart-status" style="font-size:.78rem;color:var(--muted);">—</div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="lineChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Por Categoría</div>
+              <div class="chart-sub">Distribución de gastos</div>
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:180px;">
+            <canvas id="donutChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-grid">
+        
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Gasto por Día</div>
+              <div class="chart-sub">Distribución diaria del mes</div>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="barChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Top Gastos del Mes</div>
+              <div class="chart-sub">Las salidas más fuertes de dinero</div>
+            </div>
+          </div>
+          <div id="top-expenses-list" style="margin-top:8px;">
+            <div class="empty-state" style="padding:30px 0;">
+              <div class="empty-icon">💸</div>
+              <div class="empty-sub">Cargando datos…</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Semáforo de Presupuesto</div>
+              <div class="chart-sub">Uso por categoría</div>
+            </div>
+          </div>
+          <div id="budget-bars" style="margin-top:8px;">
+            <div class="empty-state" style="padding:30px 0;">
+              <div class="empty-icon">📊</div>
+              <div class="empty-sub">Cargando datos…</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="page" id="page-add-expense">
+      <div class="chart-card" style="max-width:640px;">
+        <div class="chart-title" style="margin-bottom:4px;">Nuevo Gasto</div>
+        <div class="chart-sub">Registra un gasto en tu base privada</div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Fecha</label>
+            <input type="date" id="exp-date" />
+          </div>
+          <div class="form-group">
+            <label>Monto (S/.)</label>
+            <input type="number" id="exp-amount" placeholder="0.00" step="0.01" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Categoría</label>
+            <select id="exp-category">
+              <option value="">Seleccionar…</option>
+              <option>🍔 Alimentación</option>
+              <option>🚌 Transporte</option>
+              <option>🏠 Vivienda</option>
+              <option>💊 Salud</option>
+              <option>🎮 Entretenimiento</option>
+              <option>👗 Ropa</option>
+              <option>📚 Educación</option>
+              <option>💡 Servicios</option>
+              <option>🛒 Supermercado</option>
+              <option>💼 Trabajo</option>
+              <option>🎁 Regalo</option>
+              <option>✈️ Viaje</option>
+              <option>📱 Tecnología</option>
+              <option>🔧 Mantenimiento</option>
+              <option>🐾 Mascotas</option>
+              <option>💈 Personal</option>
+              <option>🍕 Delivery</option>
+              <option>☕ Café / Snacks</option>
+              <option>💰 Ahorro</option>
+              <option>📌 Otros</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Descripción</label>
+            <input type="text" id="exp-desc" placeholder="Ej: Almuerzo en el trabajo" />
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="addExpense()">➕ Registrar gasto</button>
+          <button class="btn btn-secondary" onclick="showPage('dashboard')">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-expenses">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <div class="month-nav">
+          <button onclick="changeMonth(-1)">◂</button>
+          <div class="month-label" id="month-display-2">Junio 2025</div>
+          <button onclick="changeMonth(1)">▸</button>
+        </div>
+        <button class="btn btn-secondary" onclick="loadExpenses()">🔄 Cargar</button>
+      </div>
+
+      <div class="table-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Registro de Gastos</div>
+            <div class="chart-sub" id="exp-count-label">— registros</div>
+          </div>
+          <button class="btn btn-primary" onclick="showPage('add-expense')">+ Agregar</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Descripción</th>
+              <th>Categoría</th>
+              <th style="text-align:right;">Monto</th>
+            </tr>
+          </thead>
+          <tbody id="expenses-tbody">
+            <tr><td colspan="4">
+              <div class="empty-state">
+                <div class="empty-icon">📋</div>
+                <div class="empty-title">Sin gastos aún</div>
+                <div class="empty-sub">Agrega tu primer gasto del mes</div>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="page" id="page-income">
+      <div class="chart-card" style="max-width:560px;">
+        <div class="chart-title" style="margin-bottom:4px;">Agregar Ingreso</div>
+        <div class="chart-sub">Suma un ingreso a tu presupuesto del mes</div>
+
+        <div class="config-notice">
+          <span>💡</span>
+          <span>Puedes registrar varios ingresos en un mismo mes (ej: sueldo principal, trabajos extra) y se sumarán automáticamente.</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Mes</label>
+            <select id="inc-month">
+              <option value="1">Enero</option>
+              <option value="2">Febrero</option>
+              <option value="3">Marzo</option>
+              <option value="4">Abril</option>
+              <option value="5">Mayo</option>
+              <option value="6">Junio</option>
+              <option value="7">Julio</option>
+              <option value="8">Agosto</option>
+              <option value="9">Septiembre</option>
+              <option value="10">Octubre</option>
+              <option value="11">Noviembre</option>
+              <option value="12">Diciembre</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Año</label>
+            <input type="number" id="inc-year" value="2025" min="2020" max="2030" />
+          </div>
+          <div class="form-group full">
+            <label>Monto del Ingreso (S/.)</label>
+            <input type="number" id="inc-amount" placeholder="Ej: 3500.00" step="0.01" min="0" />
+          </div>
+          <div class="form-group full">
+            <label>Fuente (opcional)</label>
+            <input type="text" id="inc-source" placeholder="Ej: Salario empresa XYZ" />
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveIncome()">💾 Guardar Ingreso</button>
+        </div>
+
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+          <div class="chart-title" style="font-size:.9rem;margin-bottom:12px;">Ingresos registrados:</div>
+          <div id="income-history" style="font-size:.85rem;color:var(--muted);">Cargando…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-settings">
+      <div class="settings-section">
+        <div class="settings-title">🔗 Conexión de Base de Datos</div>
+        <div class="settings-sub">URL de tu Web App de Google Apps Script</div>
+        <div class="form-group">
+          <label>URL del Web App</label>
+          <input type="url" id="gas-url" placeholder="https://script.google.com/macros/s/XXXXXXXXX/exec" />
+        </div>
+        <div class="btn-group" style="margin-top:16px;">
+          <button class="btn btn-secondary" onclick="testConnection()">🔍 Probar conexión</button>
+        </div>
+        <div id="conn-status" style="margin-top:12px;font-size:.82rem;color:var(--muted);"></div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">👤 Usuario actual</div>
+        <div class="settings-sub" id="settings-user-info">—</div>
+        <button class="btn btn-danger" onclick="logoutUser()">🚪 Desconectar base de datos</button>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">📖 ¿Cómo crear una nueva base de datos?</div>
+        <div class="settings-sub">Sigue estos pasos para crear un Excel privado para FlowBudget:</div>
+        <ol style="font-size:.85rem;color:var(--muted);line-height:1.9;padding-left:18px;">
+          <li>Crea un archivo nuevo en <strong style="color:var(--text);">Google Sheets</strong>.</li>
+          <li>En el menú superior ve a <strong style="color:var(--text);">Extensiones &gt; Apps Script</strong>.</li>
+          <li>Pega el código <code style="background:var(--surface);padding:2px 6px;border-radius:4px;">Code.gs</code> universal.</li>
+          <li>Selecciona la función <code style="background:var(--surface);padding:2px 6px;border-radius:4px;">setupDatabase</code> y dale al botón de "Ejecutar" (Run).</li>
+          <li>Ve a <strong style="color:var(--text);">Implementar &gt; Nueva implementación &gt; Web App</strong> (Ejecutar como: Yo, Acceso: Cualquiera).</li>
+          <li>Copia la URL resultante y pégala en el inicio de FlowBudget.</li>
+        </ol>
+      </div>
+    </div>
+
+  </main>
+</div><div class="loader-overlay" id="loader">
+  <div class="loader-box">
+    <div class="big-spinner"></div>
+    <span id="loader-msg">Cargando…</span>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
